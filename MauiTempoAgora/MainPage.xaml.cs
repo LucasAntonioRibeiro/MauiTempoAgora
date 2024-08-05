@@ -1,24 +1,59 @@
-﻿namespace MauiTempoAgora
+﻿using MauiTempoAgora.Models;
+using MauiTempoAgora.Service;
+using Microsoft.Maui.Devices.Sensors;
+using System.Diagnostics;
+
+
+namespace MauiTempoAgora
+
 {
     public partial class MainPage : ContentPage
     {
-        int count = 0;
+        CancellationTokenSource _cancelTokenSouce;
+        bool _isCheckingLocation;
+
+        string? cidade;
 
         public MainPage()
         {
             InitializeComponent();
         }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+        private async void Button_Clicked(object sender, EventArgs e)
         {
-            count++;
+            try
+            {
+                _cancelTokenSouce = new CancellationTokenSource();
 
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
+                GeolocationRequest request = new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(10));
 
-            SemanticScreenReader.Announce(CounterBtn.Text);
+                Location? location = await Geolocation.Default.GetLocationAsync(request, _cancelTokenSouce.Token);
+
+                if (location != null)
+                {
+                    lbl_latitude.Text = location.Latitude.ToString();
+                    lbl_longitude.Text = location.Longitude.ToString();
+
+                    Debug.WriteLine("-------------------------------------------");
+                    Debug.WriteLine(location);
+                    Debug.WriteLine("-------------------------------------------");
+
+                }
+            }
+            catch (FeatureNotSupportedException fnsEx)
+            {
+                await DisplayAlert("Erro: Dispositivo Não Suporta", fnsEx.Message, "Ok");
+            }
+        }
+
+        private void Button_Clicked_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Button_Clicked_2(object sender, EventArgs e)
+        {
+
         }
     }
 
