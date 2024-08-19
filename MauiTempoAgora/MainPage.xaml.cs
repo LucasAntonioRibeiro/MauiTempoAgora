@@ -1,12 +1,13 @@
 ﻿using MauiTempoAgora.Models;
 using MauiTempoAgora.Service;
 using Microsoft.Maui.Devices.Sensors;
+using System;
 using System.Diagnostics;
 
 
-namespace MauiTempoAgora
+namespace MauiTempoAgora;
 
-{
+
     public partial class MainPage : ContentPage
     {
         CancellationTokenSource _cancelTokenSouce;
@@ -44,17 +45,100 @@ namespace MauiTempoAgora
             {
                 await DisplayAlert("Erro: Dispositivo Não Suporta", fnsEx.Message, "Ok");
             }
+            catch(FeatureNotEnabledException fneEx)
+            {
+                await DisplayAlert("Erro: Localização Desabilitada",
+                    fneEx.Message, "OK");
+            }
+            catch (PermissionException pEx)
+            {
+                await DisplayAlert("Erro: Permissão", pEx.Message, "OK");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Erro: ", ex.Message, "OK");
+            }
+        } // Fecha método
+
+        private async Task<string> GetGeocodeReverseData(
+            double latitude = 47.673988, double longitude = -122.121513)
+        {
+            IEnumerable<Placemark> placemarks =
+                await Geocoding.Default.GetPlacemarksAsync(
+                    latitude, longitude);
+
+            Placemark? placemark = placemarks?.FirstOrDefault();
+
+            Debug.WriteLine("-------------------------------------------");
+            Debug.WriteLine(placemark?.Locality);
+            Debug.WriteLine("-------------------------------------------");
+
+            if (placemark != null)
+            {
+                cidade = placemark.Locality;
+
+                return
+                    $"AdminArea:       {placemark.AdminArea}\n" +
+                    $"CountryCode:     {placemark.CountryCode}\n" +
+                    $"CountryName:     {placemark.CountryName}\n" +
+                    $"FeatureName:     {placemark.FeatureName}\n" +
+                    $"Locality:        {placemark.Locality}\n" +
+                    $"PostalCode:      {placemark.PostalCode}\n" +
+                    $"SubAdminArea:    {placemark.SubAdminArea}\n" +
+                    $"SubLocality:     {placemark.SubLocality}\n" +
+                    $"SubThoroughfare: {placemark.SubThoroughfare}\n" +
+                    $"Thoroughfare:    {placemark.Thoroughfare}\n";
+            }
+
+            return "Nada";
         }
 
-        private void Button_Clicked_1(object sender, EventArgs e)
+        private async void Button_Clicked_1(object sender, EventArgs e)
         {
+            double latitude = Convert.ToDouble(lbl_latitude.Text);
+            double longitude = Convert.ToDouble(lbl_longitude.Text);
 
+            lbl_reverso.Text = await GetGeocodeReverseData(latitude, longitude);
         }
 
-        private void Button_Clicked_2(object sender, EventArgs e)
+        private async void Button_Clicked_2(object sender, EventArgs e)
         {
+            try
+            {
+                if (!String.IsNullOrEmpty(cidade))
+                {
+                    Tempo? previsao = await DataService.GetPrevisaoDoTempo(cidade);
 
+                    string dados_previsao = "";
+
+                    if (previsao != null)
+                    {
+                        dados_previsao = $"Humidade: {previsao.Humidity} \n" +
+                                         $"Nascer do Sol: {previsao.Sunrise} \n " +
+                                         $"Pôr do Sol: {previsao.Sunset} \n" +
+                                         $"Temperatura: {previsao.Temperature} \n" +
+                                         $"Titulo: {previsao.Title} \n" +
+                                         $"Visibilidade: {previsao.Visibility} \n" +
+                                         $"Vento: {previsao.Wind} \n" +
+                                         $"Previsão: {previsao.Weather} \n" +
+                                         $"Descrição: {previsao.WeatherDescription}";
+
+                    }
+                    else
+                    {
+                        dados_previsao = $"Sem dados, previsão nula.";
+                    }
+
+                    Debug.WriteLine("-------------------------------------------");
+                    Debug.WriteLine(dados_previsao);
+                    Debug.WriteLine("-------------------------------------------");
+
+                    lbl_previsao.Text = dados_previsao;
+                }
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Erro", ex.Message, "OK");
+            }
         }
     }
-
-}
