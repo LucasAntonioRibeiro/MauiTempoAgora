@@ -51,8 +51,11 @@ namespace MauiTempoAgora.Service
                         Weather = (string)rascunho["weather"][0]["main"],
                         WeatherDescription = (string)rascunho["weather"][0]["description"],
                     };
+                    
                 }
             }
+
+            return tempo;
         }
     }
 }
